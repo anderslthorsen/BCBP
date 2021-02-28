@@ -1,0 +1,75 @@
+#!/bin/bash
+
+	tensor_dir=/s4ever/anwG/NP/yvdwerf/data_Bergen/DWI/tensors
+	logdir=/s4ever/anwG/NP/yvdwerf/data_Bergen/DWI/tensors/logdir/
+	scriptdir=/s4ever/anwG/NP/yvdwerf/data_Bergen/DWI/scripts
+
+
+	mkdir -p ${logdir}
+
+	# N simultaneous subjects to run
+	simul=30
+
+	export fsl_sub_nconcurr=${simul}
+
+
+	cd ${tensor_dir}
+
+	rm -f intra_subj_reg*
+	rm -f ${logdir}/*
+	j=0
+	k=1
+	for subj in `cat subj_complete_data.txt`; do 
+
+	echo "${scriptdir}/intra_subj_reg.subscript ${subj}" >> intra_subj_reg_${k}
+
+
+	j=$[$j+1]
+
+	if [[ ${j} == ${simul} ]]; then
+	k=$[$k+1]
+	j=0
+	fi
+
+	done
+
+	chmod a+x intra_subj_reg*
+
+	# start jobs using fsl_sub
+
+	wraps=$(ls intra_subj_reg_*)
+	Nwraps=$(echo "$wraps" | wc -l)
+
+	echo "there are ${Nwraps} wrappers to run"
+
+	m=1
+	for job in $(ls intra_subj_reg_*); do
+
+	if [[ m -eq 1 ]]; then
+
+	varname="DTITK_reg_${m}_id"
+
+	#declare "${varname}"=`${FSLDIR}/bin/fsl_sub_5.0.10_VUMC-ncagrid_use-queues -q all.q -T 30 -N ${job} -l ${logdir} -t ./${job}`
+	declare "${varname}"=`${scriptdir}/fsl_sub -q all.q -T 30 -N ${job} -l ${logdir} -t ./${job}`
+	echo Running DTI_TK ID=${varname}
+
+	else
+	
+	prevvar=${varname}
+
+	unset varname
+
+	varname="DTITK_reg_${m}_id"
+
+	declare "${varname}"=`${scriptdir}/fsl_sub -q all.q -T 30 -j ${prevvar} -N ${job} -l ${logdir} -t ./${job} `
+	echo Running DTI_TK ID=${varname}
+
+	fi
+
+
+	m=$[$m+1]
+
+	done
+
+
+

@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+# Written by Anders L. Thorsen, March 2020
+
+
+tensor_dir=/s4ever/anwG/NP/yvdwerf/data_Bergen/DWI/tensors/between_subject
+cd ${tensor_dir}
+
+
+for subj in `cat Inter_subject.txt`; do
+	cp ${subj} ./version_160420
+done
